@@ -133,45 +133,6 @@ class PTBEnasChild(object):
 
     self.x_valid_raw = x_valid
 
-  def cache_pointer(self, sess, feed_dict=None, verbose=False):
-    """Expects self.acc and self.global_step to be defined.
-
-    Args:
-      sess: tf.Session() or one of its wrap arounds.
-      feed_dict: can be used to give more information to sess.run().
-      eval_set: "valid" or "test"
-    """
-
-    assert self.global_step is not None, "TF op self.global_step not defined."
-    global_step = sess.run(self.global_step)
-    print("Eval at {}".format(global_step))
-   
-    assert self.test_loss is not None, "TF op self.test_loss is not defined."
-    num_batches = self.num_test_batches
-    loss_op = self.test_loss
-    reset_op = self.test_reset
-    batch_size = 1
-    bptt_steps = 1
-
-    sess.run(reset_op)
-    total_loss = 0
-    for batch_id in range(num_batches):
-      curr_loss = sess.run(loss_op, feed_dict=feed_dict)
-      total_loss += np.minimum(curr_loss, 10.0 * bptt_steps * batch_size)
-      ppl_sofar = np.exp(total_loss /
-                         (bptt_steps * batch_size * (batch_id + 1)))
-      if verbose and (batch_id + 1) % 1000 == 0:
-        print("{:<5d} {:<6.2f}".format(batch_id + 1, ppl_sofar))
-    if verbose:
-      print("")
-    log_ppl = total_loss / (num_batches * batch_size * bptt_steps)
-    ppl = np.exp(np.minimum(log_ppl, 10.0))
-    sess.run(reset_op)
-    print("{}_total_loss: {:<6.2f}".format(eval_set, total_loss))
-    print("{}_log_ppl: {:<6.2f}".format(eval_set, log_ppl))
-    print("{}_ppl: {:<6.2f}".format(eval_set, ppl))
-
-
   def eval_once(self, sess, eval_set, feed_dict=None, verbose=False):
     """Expects self.acc and self.global_step to be defined.
 

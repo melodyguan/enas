@@ -578,7 +578,7 @@ class GeneralChild(Model):
         x = tf.layers.max_pooling2d(
           x, [3, 3], [1, 1], "SAME", data_format=actual_data_format)
       else:
-        raise ValueError("Unknown pool {}".format(avg_or_pool))
+        raise ValueError("Unknown pool {}".format(avg_or_max))
 
       if start_idx is not None:
         if self.data_format == "NHWC":
