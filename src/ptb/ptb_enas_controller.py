@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import sys
 import os
 import time
@@ -12,7 +16,6 @@ from tensorflow.python.training import moving_averages
 
 class PTBEnasController(object):
   def __init__(self,
-               selection_threshold=3,
                rhn_depth=5,
                lstm_size=32,
                lstm_num_layers=2,
@@ -35,10 +38,9 @@ class PTBEnasController(object):
                num_replicas=None,
                name="controller"):
 
-    print "-" * 80
-    print "Building PTBEnasController"
+    print("-" * 80)
+    print("Building PTBEnasController")
 
-    self.selection_threshold = selection_threshold
     self.rhn_depth = rhn_depth
     self.lstm_size = lstm_size
     self.lstm_num_layers = lstm_num_layers 
@@ -63,19 +65,6 @@ class PTBEnasController(object):
 
     self._create_params()
     self._build_sampler()
-
-    # print "-" * 80
-    # print "selection_threshold = {}".format(self.selection_threshold)
-    # with tf.Session() as sess:
-    #   sess.run(tf.global_variables_initializer())
-    #   for _ in xrange(10):
-    #     arc, lp, ent = sess.run(
-    #       [self.sample_arc, self.sample_log_probs, self.sample_entropy])
-    #     print "-" * 80
-    #     print arc
-    #     print lp
-    #     print ent
-    #   sys.exit(0)
 
   def _create_params(self):
     initializer = tf.random_uniform_initializer(minval=-0.1, maxval=0.1)
@@ -134,24 +123,23 @@ class PTBEnasController(object):
         if self.tanh_constant is not None:
           logits = self.tanh_constant * tf.tanh(logits)
         diff = tf.to_float(layer_id - tf.range(0, layer_id)) ** 2
-        logits -= tf.reshape(diff, [1, layer_id]) / 2.0
-        # count = tf.reduce_sum(used[:layer_id, :], axis=1)
-        # count = tf.reshape(count, [1, layer_id])
-        # logits = tf.where(count < 2 * self.selection_threshold, x=logits, y=tf.fill(tf.shape(logits), -np.inf))
+        logits -= tf.reshape(diff, [1, layer_id]) / 12.0
 
         skip_index = tf.multinomial(logits, 1)
         skip_index = tf.to_int32(skip_index)
         skip_index = tf.reshape(skip_index, [1])
         arc_seq.append(skip_index)
 
-        log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=skip_index)
+        log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
+          logits=logits, labels=skip_index)
         sample_log_probs.append(log_prob)
 
         entropy = log_prob * tf.exp(-log_prob)
         sample_entropy.append(tf.stop_gradient(entropy))
 
-        inputs = tf.nn.embedding_lookup(tf.concat(all_h[:-1], axis=0), skip_index)
-        inputs /= (1.0 + tf.to_float(layer_id - skip_index))
+        inputs = tf.nn.embedding_lookup(
+          tf.concat(all_h[:-1], axis=0), skip_index)
+        inputs /= (0.1 + tf.to_float(layer_id - skip_index))
       else:
         inputs = self.g_emb
 
@@ -161,20 +149,12 @@ class PTBEnasController(object):
         logits /= self.temperature
       if self.tanh_constant is not None:
         logits = self.tanh_constant * tf.tanh(logits)
-      # if layer_id > 0:
-      #   skip_index = tf.reduce_sum(skip_index)
-      #   mask = tf.less(used[skip_index, :], self.selection_threshold)
-      #   mask = tf.reshape(mask, [1, 2])
-      #   logits = tf.where(mask, x=logits, y=tf.fill(tf.shape(logits), -np.inf))
       func = tf.multinomial(logits, 1)
       func = tf.to_int32(func)
       func = tf.reshape(func, [1])
       arc_seq.append(func)
-      # if layer_id > 0:
-      #   one_hot = tf.one_hot(2 * skip_index + func, 2 * self.rhn_depth, dtype=tf.int32)
-      #   one_hot = tf.reshape(one_hot, [self.rhn_depth, 2])
-      #   used += one_hot
-      log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=func)
+      log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        logits=logits, labels=func)
       sample_log_probs.append(log_prob)
       entropy = log_prob * tf.exp(-log_prob)
       sample_entropy.append(tf.stop_gradient(entropy))
@@ -216,9 +196,6 @@ class PTBEnasController(object):
         0, dtype=tf.int32, trainable=False, name="train_step")
     tf_variables = [var
         for var in tf.trainable_variables() if var.name.startswith(self.name)]
-    print "-" * 80
-    for var in tf_variables:
-      print var
 
     self.train_op, self.lr, self.grad_norm, self.optimizer = get_train_ops(
       self.loss,

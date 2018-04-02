@@ -10,7 +10,6 @@ def layer_norm(x, is_training, name="layer_norm"):
                                    reuse=None if is_training else True)
   return x
 
-
 def batch_norm(x, is_training, name="batch_norm", decay=0.999, epsilon=1.0):
   shape = x.get_shape()[1]
   with tf.variable_scope(name, reuse=None if is_training else True):
@@ -38,27 +37,6 @@ def batch_norm(x, is_training, name="batch_norm", decay=0.999, epsilon=1.0):
         x = scale * (x - mean) / tf.sqrt(epsilon + variance) + offset
     else:
       x = scale * (x - moving_mean) / tf.sqrt(epsilon + moving_variance) + offset
-      # assert_ops = tf.Assert(
-      #   tf.reduce_all(tf.is_finite(x)),
-      #   [
-      #     tf.reduce_sum(tf.abs(x)),
-      #     tf.reduce_min(tf.abs(x)),
-      #     tf.reduce_max(tf.abs(x)),
-      #     tf.reduce_sum(tf.abs(moving_mean)),
-      #     tf.reduce_min(tf.abs(moving_mean)),
-      #     tf.reduce_max(tf.abs(moving_mean)),
-      #     tf.reduce_sum(tf.abs(moving_variance)),
-      #     tf.reduce_min(tf.abs(moving_variance)),
-      #     tf.reduce_max(tf.abs(moving_variance)),
-      #     tf.reduce_sum(tf.abs(scale)),
-      #     tf.reduce_min(tf.abs(scale)),
-      #     tf.reduce_max(tf.abs(scale)),
-      #     tf.reduce_sum(tf.abs(offset)),
-      #     tf.reduce_min(tf.abs(offset)),
-      #     tf.reduce_max(tf.abs(offset)),
-      #   ], summarize=100000)
-      # with tf.control_dependencies([assert_ops]):
-      #   x = tf.identity(x)
   return x
 
 

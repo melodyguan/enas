@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import os
 import sys
 
@@ -19,8 +23,6 @@ class PTBEnasChild(object):
                x_valid,
                x_test,
                num_funcs=4,
-               mixture_of_softmax=None,
-               mos_hidden=None,
                rnn_l2_reg=None,
                rnn_slowness_reg=None,
                rhn_depth=2,
@@ -54,17 +56,16 @@ class PTBEnasChild(object):
                temperature=None,
                name="ptb_lstm",
                seed=None,
-              ):
+               *args,
+               **kwargs):
     """
     Args:
       lr_dec_every: number of epochs to decay
     """
-    print "-" * 80
-    print "Build model {}".format(name)
+    print("-" * 80)
+    print("Build model {}".format(name))
 
     self.num_funcs = num_funcs
-    self.mixture_of_softmax = mixture_of_softmax
-    self.mos_hidden = mos_hidden
     self.rnn_l2_reg = rnn_l2_reg
     self.rnn_slowness_reg = rnn_slowness_reg
     self.rhn_depth = rhn_depth
@@ -103,7 +104,7 @@ class PTBEnasChild(object):
     self.valid_loss = None
     self.test_loss = None
 
-    print "Build data ops"
+    print("Build data ops")
     # training data
     self.x_train, self.y_train, self.num_train_batches = ptb_input_producer(
       x_train, self.batch_size, self.bptt_steps)
@@ -119,9 +120,11 @@ class PTBEnasChild(object):
     self.y_valid = tf.reshape(self.y_valid, [self.batch_size * self.bptt_steps])
 
     # valid_rl data
-    self.x_valid_rl, self.y_valid_rl, self.num_valid_batches = ptb_input_producer(
-      np.copy(x_valid), self.batch_size, self.bptt_steps, randomize=True)
-    self.y_valid_rl = tf.reshape(self.y_valid_rl, [self.batch_size * self.bptt_steps])
+    (self.x_valid_rl, self.y_valid_rl,
+     self.num_valid_batches) = ptb_input_producer(
+       np.copy(x_valid), self.batch_size, self.bptt_steps, randomize=True)
+    self.y_valid_rl = tf.reshape(self.y_valid_rl,
+                                 [self.batch_size * self.bptt_steps])
 
     # test data
     self.x_test, self.y_test, self.num_test_batches = ptb_input_producer(
@@ -141,7 +144,7 @@ class PTBEnasChild(object):
 
     assert self.global_step is not None, "TF op self.global_step not defined."
     global_step = sess.run(self.global_step)
-    print "Eval at {}".format(global_step)
+    print("Eval at {}".format(global_step))
    
     assert self.test_loss is not None, "TF op self.test_loss is not defined."
     num_batches = self.num_test_batches
@@ -152,20 +155,21 @@ class PTBEnasChild(object):
 
     sess.run(reset_op)
     total_loss = 0
-    for batch_id in xrange(num_batches):
+    for batch_id in range(num_batches):
       curr_loss = sess.run(loss_op, feed_dict=feed_dict)
       total_loss += np.minimum(curr_loss, 10.0 * bptt_steps * batch_size)
-      ppl_sofar = np.exp(total_loss / (bptt_steps * batch_size * (batch_id + 1)))
+      ppl_sofar = np.exp(total_loss /
+                         (bptt_steps * batch_size * (batch_id + 1)))
       if verbose and (batch_id + 1) % 1000 == 0:
-        print "{:<5d} {:<6.2f}".format(batch_id + 1, ppl_sofar)
+        print("{:<5d} {:<6.2f}".format(batch_id + 1, ppl_sofar))
     if verbose:
-      print ""
+      print("")
     log_ppl = total_loss / (num_batches * batch_size * bptt_steps)
     ppl = np.exp(np.minimum(log_ppl, 10.0))
     sess.run(reset_op)
-    print "{}_total_loss: {:<6.2f}".format(eval_set, total_loss)
-    print "{}_log_ppl: {:<6.2f}".format(eval_set, log_ppl)
-    print "{}_ppl: {:<6.2f}".format(eval_set, ppl)
+    print("{}_total_loss: {:<6.2f}".format(eval_set, total_loss))
+    print("{}_log_ppl: {:<6.2f}".format(eval_set, log_ppl))
+    print("{}_ppl: {:<6.2f}".format(eval_set, ppl))
 
 
   def eval_once(self, sess, eval_set, feed_dict=None, verbose=False):
@@ -179,7 +183,7 @@ class PTBEnasChild(object):
 
     assert self.global_step is not None, "TF op self.global_step not defined."
     global_step = sess.run(self.global_step)
-    print "Eval at {}".format(global_step)
+    print("Eval at {}".format(global_step))
    
     if eval_set == "valid":
       assert self.valid_loss is not None, "TF op self.valid_loss is not defined."
@@ -200,127 +204,106 @@ class PTBEnasChild(object):
 
     sess.run(reset_op)
     total_loss = 0
-    for batch_id in xrange(num_batches):
+    for batch_id in range(num_batches):
       curr_loss = sess.run(loss_op, feed_dict=feed_dict)
       total_loss += np.minimum(curr_loss, 10.0 * bptt_steps * batch_size)
       ppl_sofar = np.exp(total_loss / (bptt_steps * batch_size * (batch_id + 1)))
       if verbose and (batch_id + 1) % 1000 == 0:
-        print "{:<5d} {:<6.2f}".format(batch_id + 1, ppl_sofar)
+        print("{:<5d} {:<6.2f}".format(batch_id + 1, ppl_sofar))
     if verbose:
-      print ""
+      print("")
     log_ppl = total_loss / (num_batches * batch_size * bptt_steps)
     ppl = np.exp(np.minimum(log_ppl, 10.0))
     sess.run(reset_op)
-    print "{}_total_loss: {:<6.2f}".format(eval_set, total_loss)
-    print "{}_log_ppl: {:<6.2f}".format(eval_set, log_ppl)
-    print "{}_ppl: {:<6.2f}".format(eval_set, ppl)
+    print("{}_total_loss: {:<6.2f}".format(eval_set, total_loss))
+    print("{}_log_ppl: {:<6.2f}".format(eval_set, log_ppl))
+    print("{}_ppl: {:<6.2f}".format(eval_set, ppl))
+    return ppl
 
   def _build_train(self):
-    print "Build train graph"
+    print("Build train graph")
     all_h, self.train_reset = self._model(self.x_train, True, False)
-    log_probs = self._get_log_probs(all_h, self.y_train, batch_size=self.batch_size, is_training=True)
+    log_probs = self._get_log_probs(
+      all_h, self.y_train, batch_size=self.batch_size, is_training=True)
     self.loss = tf.reduce_sum(log_probs) / tf.to_float(self.batch_size)
     self.train_ppl = tf.exp(tf.reduce_mean(log_probs))
 
-    tf_variables = [var for var in tf.trainable_variables() if var.name.startswith(self.name)]
+    tf_variables = [
+      var for var in tf.trainable_variables() if var.name.startswith(self.name)]
     self.num_vars = count_model_params(tf_variables)
-    print "-" * 80
-    for var in tf_variables:
-      print var
-    print "Model has {} parameters".format(self.num_vars)
+    print("-" * 80)
+    print("Model has {} parameters".format(self.num_vars))
 
     loss = self.loss
     if self.rnn_l2_reg is not None:
-      loss += self.rnn_l2_reg * tf.reduce_sum(all_h ** 2) / tf.to_float(self.batch_size)
+      loss += (self.rnn_l2_reg * tf.reduce_sum(all_h ** 2) /
+               tf.to_float(self.batch_size))
     if self.rnn_slowness_reg is not None:
-      loss += self.rnn_slowness_reg * self.all_h_diff / tf.to_float(self.batch_size)
-    self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name="global_step")
-    self.train_op, self.lr, self.grad_norm, self.optimizer, self.grad_norms = get_train_ops(
-      loss,
-      tf_variables,
-      self.global_step,
-      clip_mode=self.clip_mode,
-      grad_bound=self.grad_bound,
-      l2_reg=self.l2_reg,
-      lr_warmup_val=self.lr_warmup_val,
-      lr_warmup_steps=self.lr_warmup_steps,
-      lr_init=self.lr_init,
-      lr_dec_start=self.lr_dec_start,
-      lr_dec_every=self.lr_dec_every,
-      lr_dec_rate=self.lr_dec_rate,
-      lr_dec_min=self.lr_dec_min,
-      optim_algo=self.optim_algo,
-      moving_average=self.optim_moving_average,
-      sync_replicas=self.sync_replicas,
-      num_aggregate=self.num_aggregate,
-      num_replicas=self.num_replicas,
-      get_grad_norms=True,
-    )
+      loss += (self.rnn_slowness_reg * self.all_h_diff /
+               tf.to_float(self.batch_size))
+    self.global_step = tf.Variable(
+      0, dtype=tf.int32, trainable=False, name="global_step")
+    (self.train_op,
+     self.lr,
+     self.grad_norm,
+     self.optimizer,
+     self.grad_norms) = get_train_ops(
+       loss,
+       tf_variables,
+       self.global_step,
+       clip_mode=self.clip_mode,
+       grad_bound=self.grad_bound,
+       l2_reg=self.l2_reg,
+       lr_warmup_val=self.lr_warmup_val,
+       lr_warmup_steps=self.lr_warmup_steps,
+       lr_init=self.lr_init,
+       lr_dec_start=self.lr_dec_start,
+       lr_dec_every=self.lr_dec_every,
+       lr_dec_rate=self.lr_dec_rate,
+       lr_dec_min=self.lr_dec_min,
+       optim_algo=self.optim_algo,
+       moving_average=self.optim_moving_average,
+       sync_replicas=self.sync_replicas,
+       num_aggregate=self.num_aggregate,
+       num_replicas=self.num_replicas,
+       get_grad_norms=True,
+     )
 
   def _get_log_probs(self, all_h, labels, batch_size=None, is_training=False):
-    if self.mixture_of_softmax is not None:
-      num_preds = tf.shape(all_h)[0]
-      mos_exp_weight = tf.matmul(all_h, self.w_soft_exp)
-      mos_exp_weight = tf.nn.softmax(mos_exp_weight)
-      mos_exp_weight = tf.reshape(mos_exp_weight, [num_preds * self.mixture_of_softmax, 1])
-      mos_context = tf.matmul(all_h, self.w_soft_con)
-      mos_context = tf.tanh(mos_context)
-
-      if is_training:
-        def _gen_mask(shape, keep_prob):
-          _mask = tf.random_uniform(shape, dtype=tf.float32)
-          _mask = tf.floor(_mask + keep_prob) / keep_prob
-          return _mask
-
-        mos_context = tf.reshape(
-          mos_context,
-          [batch_size, -1, self.mixture_of_softmax, self.mos_hidden])
-        o_mask = _gen_mask(
-          [batch_size, 1, self.mixture_of_softmax, self.mos_hidden],
-          self.lstm_o_keep)
-        mos_context *= o_mask
-
-      mos_context = tf.reshape(
-        mos_context, [num_preds * self.mixture_of_softmax, self.mos_hidden])
-      logits = tf.matmul(mos_context, self.w_soft)
-      probs = tf.nn.softmax(logits)
-      probs *= mos_exp_weight
-      probs = tf.reshape(probs, [num_preds, self.mixture_of_softmax, self.vocab_size])
-      probs = tf.reduce_sum(probs, axis=1)
-      logits = tf.log(probs)
-      log_probs = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)
-    else:
-      logits = tf.matmul(all_h, self.w_emb, transpose_b=True)
-      log_probs = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)
+    logits = tf.matmul(all_h, self.w_emb, transpose_b=True)
+    log_probs = tf.nn.sparse_softmax_cross_entropy_with_logits(
+      logits=logits, labels=labels)
 
     return log_probs
 
   def _build_valid(self):
-    print "-" * 80
-    print "Build valid graph"
+    print("-" * 80)
+    print("Build valid graph")
     all_h, self.valid_reset = self._model(self.x_valid, False, False)
     all_h = tf.stop_gradient(all_h)
     log_probs = self._get_log_probs(all_h, self.y_valid)
     self.valid_loss = tf.reduce_sum(log_probs)
 
   def _build_valid_rl(self):
-    print "-" * 80
-    print "Build valid graph for RL"
-    all_h, self.valid_rl_reset = self._model(self.x_valid_rl, False, False, should_carry=False)
+    print("-" * 80)
+    print("Build valid graph for RL")
+    all_h, self.valid_rl_reset = self._model(
+      self.x_valid_rl, False, False, should_carry=False)
     all_h = tf.stop_gradient(all_h)
     log_probs = self._get_log_probs(all_h, self.y_valid_rl)
     self.rl_loss = tf.reduce_mean(log_probs)
     self.rl_loss = tf.stop_gradient(self.rl_loss)
 
   def _build_test(self):
-    print "-" * 80
-    print "Build test graph"
+    print("-" * 80)
+    print("Build test graph")
     all_h, self.test_reset = self._model(self.x_test, False, True)
     all_h = tf.stop_gradient(all_h)
     log_probs = self._get_log_probs(all_h, self.y_test)
     self.test_loss = tf.reduce_sum(log_probs)
 
-  def _rhn_fixed(self, x, prev_s, w_prev, w_skip, is_training, x_mask=None, s_mask=None):
+  def _rhn_fixed(self, x, prev_s, w_prev, w_skip, is_training,
+                 x_mask=None, s_mask=None):
     batch_size = prev_s.get_shape()[0].value
     start_idx = self.sample_arc[0] * 2 * self.lstm_hidden_size
     end_idx = start_idx + 2 * self.lstm_hidden_size
@@ -350,7 +333,7 @@ class PTBEnasChild(object):
 
     start_idx = 1
     used = np.zeros([self.rhn_depth], dtype=np.int32)
-    for rhn_layer_id in xrange(1, self.rhn_depth):
+    for rhn_layer_id in range(1, self.rhn_depth):
       with tf.variable_scope("rhn_layer_{}".format(rhn_layer_id)):
         prev_idx = self.sample_arc[start_idx]
         func_idx = self.sample_arc[start_idx + 1]
@@ -382,20 +365,22 @@ class PTBEnasChild(object):
     layers = [prev_layer for u, prev_layer in zip(used, layers) if u == 0]
     layers = tf.add_n(layers) / np.sum(1.0 - used)
     layers.set_shape([batch_size, self.lstm_hidden_size])
-    # layers = layer_norm(layers, is_training)
 
     return layers
 
-  def _rhn_enas(self, x, prev_s, w_prev, w_skip, is_training, x_mask=None, s_mask=None):
+  def _rhn_enas(self, x, prev_s, w_prev, w_skip, is_training,
+                x_mask=None, s_mask=None):
     batch_size = prev_s.get_shape()[0].value
     start_idx = self.sample_arc[0] * 2 * self.lstm_hidden_size
     end_idx = start_idx + 2 * self.lstm_hidden_size
     if is_training:
       assert x_mask is not None, "x_mask is None"
       assert s_mask is not None, "s_mask is None"
-      ht = tf.matmul(tf.concat([x * x_mask, prev_s * s_mask], axis=1), w_prev[start_idx:end_idx, :])
+      ht = tf.matmul(tf.concat([x * x_mask, prev_s * s_mask], axis=1),
+                     w_prev[start_idx:end_idx, :])
     else:
-      ht = tf.matmul(tf.concat([x, prev_s], axis=1), w_prev[start_idx:end_idx, :])
+      ht = tf.matmul(tf.concat([x, prev_s], axis=1),
+                     w_prev[start_idx:end_idx, :])
     with tf.variable_scope("rhn_layer_0"):
       ht = batch_norm(ht, is_training)
     h, t = tf.split(ht, 2, axis=1)
@@ -414,7 +399,7 @@ class PTBEnasChild(object):
 
     start_idx = 1
     used = []
-    for rhn_layer_id in xrange(1, self.rhn_depth):
+    for rhn_layer_id in range(1, self.rhn_depth):
       with tf.variable_scope("rhn_layer_{}".format(rhn_layer_id)):
         prev_idx = self.sample_arc[start_idx]
         func_idx = self.sample_arc[start_idx + 1]
@@ -431,7 +416,14 @@ class PTBEnasChild(object):
           ht = tf.matmul(prev_s, w)
         ht = batch_norm(ht, is_training)
         h, t = tf.split(ht, 2, axis=1)
-        h = tf.cond(tf.equal(func_idx, 0), lambda: tf.tanh(h), lambda: tf.nn.relu(h))
+        h = tf.case(
+          {
+            tf.equal(func_idx, 0): lambda: tf.tanh(h),
+            tf.equal(func_idx, 1): lambda: tf.nn.relu(h),
+            tf.equal(func_idx, 2): lambda: tf.identity(h),
+            tf.equal(func_idx, 3): lambda: tf.sigmoid(h),
+          },
+          default=lambda: tf.constant(0.0, dtype=tf.float32), exclusive=True)
         t = tf.sigmoid(t)
         s = prev_s + t * (h - prev_s)
         layers.append(s)
@@ -473,7 +465,7 @@ class PTBEnasChild(object):
       zeros = tf.zeros_like(e_mask)
       ones = tf.ones_like(e_mask)
       r = [tf.constant([[False]] * batch_size, dtype=tf.bool)]  # more zeros to e_mask
-      for step in xrange(1, num_steps):
+      for step in range(1, num_steps):
         should_zero = tf.logical_and(
           tf.equal(x[:, :step], x[:, step:step+1]),
           tf.equal(e_mask[:, :step], 0))
@@ -486,9 +478,10 @@ class PTBEnasChild(object):
 
       # variational dropout in the hidden layers
       x_mask, h_mask = [], []
-      for layer_id in xrange(self.lstm_num_layers):
+      for layer_id in range(self.lstm_num_layers):
         x_mask.append(_gen_mask([batch_size, self.lstm_hidden_size], self.lstm_x_keep))
         h_mask.append(_gen_mask([batch_size, self.lstm_hidden_size], self.lstm_h_keep))
+        h_mask.append(h_mask)
 
       # variational dropout in the output layer
       o_mask = _gen_mask([batch_size, self.lstm_hidden_size], self.lstm_o_keep)
@@ -520,20 +513,9 @@ class PTBEnasChild(object):
             if self.lstm_l_skip:
               curr_h += inputs
 
-            # curr_h = tf.Print(
-            #   curr_h,
-            #   [
-            #     tf.reduce_min(curr_h),
-            #     tf.reduce_max(curr_h),
-            #     tf.reduce_sum(curr_h),
-            #   ],
-            #   message="curr_h_layer_{}: ".format(layer_id), summarize=1000)
-
             next_h.append(curr_h)
 
         out_h = next_h[-1]
-        if is_training and not self.mixture_of_softmax:
-          out_h *= o_mask
         all_h = all_h.write(step, out_h)
       return step + 1, next_h, all_h
     
@@ -565,69 +547,65 @@ class PTBEnasChild(object):
       init_range = 0.05
     else:
       init_range = 0.04
-    init_range = 0.05
-    initializer = tf.random_uniform_initializer(minval=-init_range, maxval=init_range)
+    initializer = tf.random_uniform_initializer(
+      minval=-init_range, maxval=init_range)
     with tf.variable_scope(self.name, initializer=initializer):
       if self.fixed_arc is None:
         with tf.variable_scope("rnn"):
           self.w_prev, self.w_skip = [], []
-          for layer_id in xrange(self.lstm_num_layers):
+          for layer_id in range(self.lstm_num_layers):
             with tf.variable_scope("layer_{}".format(layer_id)):
               w_prev = tf.get_variable(
                 "w_prev",
-                [2 * self.num_funcs * self.lstm_hidden_size, 2 * self.lstm_hidden_size])
+                [2 * self.num_funcs * self.lstm_hidden_size,
+                 2 * self.lstm_hidden_size])
               w_skip = [None]
-              for rhn_layer_id in xrange(1, self.rhn_depth):
+              for rhn_layer_id in range(1, self.rhn_depth):
                 with tf.variable_scope("layer_{}".format(rhn_layer_id)):
                   w = tf.get_variable(
-                    "w", [self.num_funcs * rhn_layer_id * self.lstm_hidden_size, 2 * self.lstm_hidden_size])
+                    "w", [self.num_funcs * rhn_layer_id * self.lstm_hidden_size,
+                          2 * self.lstm_hidden_size])
                   w_skip.append(w)
               self.w_prev.append(w_prev)
               self.w_skip.append(w_skip)
       else:
         with tf.variable_scope("rnn"):
           self.w_prev, self.w_skip = [], []
-          for layer_id in xrange(self.lstm_num_layers):
+          for layer_id in range(self.lstm_num_layers):
             with tf.variable_scope("layer_{}".format(layer_id)):
-              w_prev = tf.get_variable("w_prev", [2 * self.lstm_hidden_size, 2 * self.lstm_hidden_size])
+              w_prev = tf.get_variable("w_prev", [2 * self.lstm_hidden_size,
+                                                  2 * self.lstm_hidden_size])
               w_skip = [None]
-              for rhn_layer_id in xrange(1, self.rhn_depth):
+              for rhn_layer_id in range(1, self.rhn_depth):
                 with tf.variable_scope("layer_{}".format(rhn_layer_id)):
-                  w = tf.get_variable("w", [self.lstm_hidden_size, 2 * self.lstm_hidden_size])
+                  w = tf.get_variable("w", [self.lstm_hidden_size,
+                                            2 * self.lstm_hidden_size])
                   w_skip.append(w)
               self.w_prev.append(w_prev)
               self.w_skip.append(w_skip)
 
-      if self.mixture_of_softmax is not None:
-        with tf.variable_scope("mixture_of_softmax"):
-          with tf.variable_scope("softmax"):
-            self.w_soft = tf.get_variable("w", [self.mos_hidden, self.vocab_size])
-          with tf.variable_scope("expert"):
-            self.w_soft_exp = tf.get_variable("w", [self.lstm_hidden_size, self.mixture_of_softmax])
-          with tf.variable_scope("context"):
-            self.w_soft_con = tf.get_variable(
-              "w", [self.lstm_hidden_size, self.mixture_of_softmax * self.mos_hidden])
-
       with tf.variable_scope("embedding"):
-        self.w_emb = tf.get_variable("w", [self.vocab_size, self.lstm_hidden_size])
-
-      # with tf.variable_scope("softmax"):
-      #   self.w_soft = tf.get_variable("w", [self.lstm_hidden_size, self.vocab_size])
+        self.w_emb = tf.get_variable(
+          "w", [self.vocab_size, self.lstm_hidden_size])
 
       with tf.variable_scope("starting_states"):
-        zeros = np.zeros([self.batch_size, self.lstm_hidden_size], dtype=np.float32)
-        zeros_one_instance = np.zeros([1, self.lstm_hidden_size], dtype=np.float32)
+        zeros = np.zeros(
+          [self.batch_size, self.lstm_hidden_size], dtype=np.float32)
+        zeros_one_instance = np.zeros(
+          [1, self.lstm_hidden_size], dtype=np.float32)
 
         self.start_h, self.test_start_h = [], []
-        for _ in xrange(self.lstm_num_layers):
+        for _ in range(self.lstm_num_layers):
           self.start_h.append(tf.Variable(zeros, trainable=False))
-          self.test_start_h.append(tf.Variable(zeros_one_instance, trainable=False))
+          self.test_start_h.append(tf.Variable(zeros_one_instance,
+                                               trainable=False))
 
   def connect_controller(self, controller_model):
     if self.fixed_arc is None:
       self.sample_arc = controller_model.sample_arc
     else:
-      sample_arc = np.array([x for x in self.fixed_arc.split(" ") if x], dtype=np.int32)
+      sample_arc = np.array(
+        [x for x in self.fixed_arc.split(" ") if x], dtype=np.int32)
       self.sample_arc = sample_arc
 
     self._build_params()

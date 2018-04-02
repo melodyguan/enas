@@ -106,22 +106,24 @@ class Model(object):
       self.y_train = y_train
 
       # valid data
-      images["valid_original"] = np.copy(images["valid"])
-      labels["valid_original"] = np.copy(labels["valid"])
-      if self.data_format == "NCHW":
-        images["valid"] = tf.transpose(images["valid"], [0, 3, 1, 2])
-      self.num_valid_examples = np.shape(images["valid"])[0]
-      self.num_valid_batches = (
-        (self.num_valid_examples + self.eval_batch_size - 1)
-        // self.eval_batch_size)
-      self.x_valid, self.y_valid = tf.train.batch(
-        [images["valid"], labels["valid"]],
-        batch_size=self.eval_batch_size,
-        capacity=5000,
-        enqueue_many=True,
-        num_threads=1,
-        allow_smaller_final_batch=True,
-      )
+      self.x_valid, self.y_valid = None, None
+      if images["valid"] is not None:
+        images["valid_original"] = np.copy(images["valid"])
+        labels["valid_original"] = np.copy(labels["valid"])
+        if self.data_format == "NCHW":
+          images["valid"] = tf.transpose(images["valid"], [0, 3, 1, 2])
+        self.num_valid_examples = np.shape(images["valid"])[0]
+        self.num_valid_batches = (
+          (self.num_valid_examples + self.eval_batch_size - 1)
+          // self.eval_batch_size)
+        self.x_valid, self.y_valid = tf.train.batch(
+          [images["valid"], labels["valid"]],
+          batch_size=self.eval_batch_size,
+          capacity=5000,
+          enqueue_many=True,
+          num_threads=1,
+          allow_smaller_final_batch=True,
+        )
 
       # test data
       if self.data_format == "NCHW":
@@ -152,17 +154,18 @@ class Model(object):
       eval_set: "valid" or "test"
     """
 
-    assert self.global_step is not None, "TF op self.global_step not defined."
+    assert self.global_step is not None
     global_step = sess.run(self.global_step)
     print "Eval at {}".format(global_step)
    
     if eval_set == "valid":
-      assert self.valid_acc is not None, "TF op self.valid_acc is not defined."
+      assert self.x_valid is not None
+      assert self.valid_acc is not None
       num_examples = self.num_valid_examples
       num_batches = self.num_valid_batches
       acc_op = self.valid_acc
     elif eval_set == "test":
-      assert self.test_acc is not None, "TF op self.test_acc is not defined."
+      assert self.test_acc is not None
       num_examples = self.num_test_examples
       num_batches = self.num_test_batches
       acc_op = self.test_acc
@@ -221,14 +224,15 @@ class Model(object):
       num_replicas=self.num_replicas)
 
   def _build_valid(self):
-    print "-" * 80
-    print "Build valid graph"
-    logits = self._model(self.x_valid, False, reuse=True)
-    self.valid_preds = tf.argmax(logits, axis=1)
-    self.valid_preds = tf.to_int32(self.valid_preds)
-    self.valid_acc = tf.equal(self.valid_preds, self.y_valid)
-    self.valid_acc = tf.to_int32(self.valid_acc)
-    self.valid_acc = tf.reduce_sum(self.valid_acc)
+    if self.x_valid is not None:
+      print "-" * 80
+      print "Build valid graph"
+      logits = self._model(self.x_valid, False, reuse=True)
+      self.valid_preds = tf.argmax(logits, axis=1)
+      self.valid_preds = tf.to_int32(self.valid_preds)
+      self.valid_acc = tf.equal(self.valid_preds, self.y_valid)
+      self.valid_acc = tf.to_int32(self.valid_acc)
+      self.valid_acc = tf.reduce_sum(self.valid_acc)
 
   def _build_test(self):
     print "-" * 80

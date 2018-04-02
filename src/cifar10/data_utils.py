@@ -48,11 +48,14 @@ def read_data(data_path, num_valids=5000):
   ]
   images["train"], labels["train"] = _read_data(data_path, train_files)
 
-  images["valid"] = images["train"][-num_valids:]
-  labels["valid"] = labels["train"][-num_valids:]
+  if num_valids:
+    images["valid"] = images["train"][-num_valids:]
+    labels["valid"] = labels["train"][-num_valids:]
 
-  images["train"] = images["train"][:-num_valids]
-  labels["train"] = labels["train"][:-num_valids]
+    images["train"] = images["train"][:-num_valids]
+    labels["train"] = labels["train"][:-num_valids]
+  else:
+    images["valid"], labels["valid"] = None, None
 
   images["test"], labels["test"] = _read_data(data_path, test_file)
 
@@ -64,7 +67,9 @@ def read_data(data_path, num_valids=5000):
   print "std: {}".format(np.reshape(std * 255.0, [-1]))
 
   images["train"] = (images["train"] - mean) / std
-  images["valid"] = (images["valid"] - mean) / std
+  if num_valids:
+    images["valid"] = (images["valid"] - mean) / std
   images["test"] = (images["test"] - mean) / std
 
   return images, labels
+

@@ -89,7 +89,7 @@ def global_avg_pool(x, data_format="NHWC"):
   return x
 
 
-def batch_norm(x, is_training, name="bn", decay=0.9, epsilon=1e-3,
+def batch_norm(x, is_training, name="bn", decay=0.9, epsilon=1e-5,
                data_format="NHWC"):
   if data_format == "NHWC":
     shape = [x.get_shape()[3]]

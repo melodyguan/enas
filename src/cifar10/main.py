@@ -19,18 +19,12 @@ from src.utils import DEFINE_integer
 from src.utils import DEFINE_string
 from src.utils import print_user_flags
 
-from src.cifar10.controller import ConvController
-from src.cifar10.enas_child import EnasChild
 from src.cifar10.data_utils import read_data
-from src.cifar10.multi_layers_conv_net import MultiLayerConvNet
-from src.cifar10.connection_controller import ConnectionController
-from src.cifar10.connection_enas_child import ConnectionEnasChild
 from src.cifar10.general_controller import GeneralController
 from src.cifar10.general_child import GeneralChild
 
 from src.cifar10.micro_controller import MicroController
 from src.cifar10.micro_child import MicroChild
-
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -39,14 +33,14 @@ DEFINE_boolean("reset_output_dir", False, "Delete output_dir if exists.")
 DEFINE_string("data_path", "", "")
 DEFINE_string("output_dir", "", "")
 DEFINE_string("data_format", "NHWC", "'NHWC' or 'NCWH'")
-DEFINE_string("search_for", None, "Must be [conv|connection|micro]")
+DEFINE_string("search_for", None, "Must be [macro|micro]")
 
 DEFINE_integer("batch_size", 32, "")
 
 DEFINE_integer("num_epochs", 300, "")
-DEFINE_integer("child_lr_dec_every", 100, "Number of epochs")
+DEFINE_integer("child_lr_dec_every", 100, "")
 DEFINE_integer("child_num_layers", 5, "")
-DEFINE_integer("child_num_cell_layers", 5, "")
+DEFINE_integer("child_num_cells", 5, "")
 DEFINE_integer("child_filter_size", 5, "")
 DEFINE_integer("child_out_filters", 48, "")
 DEFINE_integer("child_out_filters_scale", 1, "")
@@ -82,13 +76,12 @@ DEFINE_float("controller_temperature", None, "")
 DEFINE_float("controller_entropy_weight", None, "")
 DEFINE_float("controller_skip_target", 0.8, "")
 DEFINE_float("controller_skip_weight", 0.0, "")
-
 DEFINE_integer("controller_num_aggregate", 1, "")
 DEFINE_integer("controller_num_replicas", 1, "")
 DEFINE_integer("controller_train_steps", 50, "")
 DEFINE_integer("controller_forwards_limit", 2, "")
 DEFINE_integer("controller_train_every", 2,
-               "train the controller after how many this number of epochs")
+               "train the controller after this number of epochs")
 DEFINE_boolean("controller_search_whole_channels", False, "")
 DEFINE_boolean("controller_sync_replicas", False, "To sync or not to sync.")
 DEFINE_boolean("controller_training", True, "")
@@ -120,7 +113,7 @@ def get_ops(images, labels):
     cutout_size=FLAGS.child_cutout_size,
     whole_channels=FLAGS.controller_search_whole_channels,
     num_layers=FLAGS.child_num_layers,
-    num_cell_layers=FLAGS.child_num_cell_layers,
+    num_cells=FLAGS.child_num_cells,
     num_branches=FLAGS.child_num_branches,
     fixed_arc=FLAGS.child_fixed_arc,
     out_filters_scale=FLAGS.child_out_filters_scale,
@@ -153,7 +146,7 @@ def get_ops(images, labels):
       search_whole_channels=FLAGS.controller_search_whole_channels,
       skip_target=FLAGS.controller_skip_target,
       skip_weight=FLAGS.controller_skip_weight,
-      num_cell_layers=FLAGS.child_num_cell_layers,
+      num_cells=FLAGS.child_num_cells,
       num_layers=FLAGS.child_num_layers,
       num_branches=FLAGS.child_num_branches,
       out_filters=FLAGS.child_out_filters,
@@ -223,7 +216,7 @@ def train():
   if FLAGS.child_fixed_arc is None:
     images, labels = read_data(FLAGS.data_path)
   else:
-    images, labels = read_data(FLAGS.data_path, num_valids=1)
+    images, labels = read_data(FLAGS.data_path, num_valids=0)
 
   g = tf.Graph()
   with g.as_default():
@@ -248,21 +241,6 @@ def train():
     config = tf.ConfigProto(allow_soft_placement=True)
     with tf.train.SingularMonitoredSession(
       config=config, hooks=hooks, checkpoint_dir=FLAGS.output_dir) as sess:
-        # print "Here are 100 architectures"
-        # for _ in xrange(100):
-        #   arc, acc = sess.run([
-        #     controller_ops["sample_arc"],
-        #     controller_ops["valid_acc"],
-        #   ])
-        #   start = 0
-        #   print "-" * 80
-        #   for layer_id in xrange(FLAGS.child_num_layers):
-        #     end = start + 2 * FLAGS.child_num_branches + layer_id
-        #     print np.reshape(arc[start: end], [-1])
-        #     start = end
-        #   print "val_acc={:<6.4f}".format(acc)
-        # sys.exit(0)
-
         start_time = time.time()
         while True:
           run_ops = [
@@ -298,7 +276,7 @@ def train():
             if (FLAGS.controller_training and
                 epoch % FLAGS.controller_train_every == 0):
               print("Epoch {}: Training controller".format(epoch))
-              for ct_step in xrange(FLAGS.controller_train_steps *
+              for ct_step in range(FLAGS.controller_train_steps *
                                     FLAGS.controller_num_aggregate):
                 run_ops = [
                   controller_ops["loss"],
@@ -328,7 +306,7 @@ def train():
                   print(log_string)
 
               print("Here are 10 architectures")
-              for _ in xrange(10):
+              for _ in range(10):
                 arc, acc = sess.run([
                   controller_ops["sample_arc"],
                   controller_ops["valid_acc"],
@@ -339,7 +317,7 @@ def train():
                   print(np.reshape(reduce_arc, [-1]))
                 else:
                   start = 0
-                  for layer_id in xrange(FLAGS.child_num_layers):
+                  for layer_id in range(FLAGS.child_num_layers):
                     if FLAGS.controller_search_whole_channels:
                       end = start + 1 + layer_id
                     else:
@@ -350,7 +328,8 @@ def train():
                 print("-" * 80)
 
             print("Epoch {}: Eval".format(epoch))
-            ops["eval_func"](sess, "valid")
+            if FLAGS.child_fixed_arc is None:
+              ops["eval_func"](sess, "valid")
             ops["eval_func"](sess, "test")
 
           if epoch >= FLAGS.num_epochs:

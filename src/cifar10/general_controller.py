@@ -39,7 +39,9 @@ class GeneralController(Controller):
                num_replicas=None,
                skip_target=0.8,
                skip_weight=0.5,
-               name="controller"):
+               name="controller",
+               *args,
+               **kwargs):
 
     print "-" * 80
     print "Building ConvController"
@@ -78,15 +80,6 @@ class GeneralController(Controller):
     self._create_params()
     self._build_sampler()
 
-    # config = tf.ConfigProto(allow_soft_placement=True)
-    # with tf.Session(config=config) as sess:
-    #   sess.run(tf.global_variables_initializer())
-    #   for _ in xrange(10):
-    #     arc, lp, ent = sess.run([self.sample_arc, self.sample_log_prob, self.sample_entropy])
-    #     print "-" * 80
-    #     print arc
-    # sys.exit(0)
-
   def _create_params(self):
     initializer = tf.random_uniform_initializer(minval=-0.1, maxval=0.1)
     with tf.variable_scope(self.name, initializer=initializer):
@@ -101,9 +94,11 @@ class GeneralController(Controller):
       self.g_emb = tf.get_variable("g_emb", [1, self.lstm_size])
       if self.search_whole_channels:
         with tf.variable_scope("emb"):
-          self.w_emb = tf.get_variable("w", [self.num_branches, self.lstm_size])
+          self.w_emb = tf.get_variable(
+            "w", [self.num_branches, self.lstm_size])
         with tf.variable_scope("softmax"):
-          self.w_soft = tf.get_variable("w", [self.lstm_size, self.num_branches])
+          self.w_soft = tf.get_variable(
+            "w", [self.lstm_size, self.num_branches])
       else:
         self.w_emb = {"start": [], "count": []}
         with tf.variable_scope("emb"):
@@ -147,7 +142,8 @@ class GeneralController(Controller):
     prev_h = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
               xrange(self.lstm_num_layers)]
     inputs = self.g_emb
-    skip_targets = tf.constant([1.0 - self.skip_target, self.skip_target], dtype=tf.float32)
+    skip_targets = tf.constant([1.0 - self.skip_target, self.skip_target],
+                               dtype=tf.float32)
     for layer_id in xrange(self.num_layers):
       if self.search_whole_channels:
         next_c, next_h = stack_lstm(inputs, prev_c, prev_h, self.w_lstm)
@@ -166,7 +162,8 @@ class GeneralController(Controller):
         else:
           raise ValueError("Unknown search_for {}".format(self.search_for))
         arc_seq.append(branch_id)
-        log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logit, labels=branch_id)
+        log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
+          logits=logit, labels=branch_id)
         log_probs.append(log_prob)
         entropy = tf.stop_gradient(log_prob * tf.exp(-log_prob))
         entropys.append(entropy)
@@ -184,7 +181,8 @@ class GeneralController(Controller):
           start = tf.to_int32(start)
           start = tf.reshape(start, [1])
           arc_seq.append(start)
-          log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logit, labels=start)
+          log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            logits=logit, labels=start)
           log_probs.append(log_prob)
           entropy = tf.stop_gradient(log_prob * tf.exp(-log_prob))
           entropys.append(entropy)
@@ -205,7 +203,8 @@ class GeneralController(Controller):
           count = tf.to_int32(count)
           count = tf.reshape(count, [1])
           arc_seq.append(count + 1)
-          log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logit, labels=count)
+          log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            logits=logit, labels=count)
           log_probs.append(log_prob)
           entropy = tf.stop_gradient(log_prob * tf.exp(-log_prob))
           entropys.append(entropy)
@@ -234,10 +233,12 @@ class GeneralController(Controller):
         kl = tf.reduce_sum(kl)
         skip_penaltys.append(kl)
 
-        log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logit, labels=skip)
+        log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
+          logits=logit, labels=skip)
         log_probs.append(tf.reduce_sum(log_prob, keep_dims=True))
 
-        entropy = tf.stop_gradient(tf.reduce_sum(log_prob * tf.exp(-log_prob), keep_dims=True))
+        entropy = tf.stop_gradient(
+          tf.reduce_sum(log_prob * tf.exp(-log_prob), keep_dims=True))
         entropys.append(entropy)
 
         skip = tf.to_float(skip)

@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import os
 import cPickle as pickle
 import shutil
@@ -15,8 +19,6 @@ from src.utils import DEFINE_integer
 from src.utils import DEFINE_string
 from src.utils import print_user_flags
 
-from src.ptb.ptb_rhn_model import PTBRhnModel
-from src.ptb.ptb_base_model import PTBBaseModel
 from src.ptb.ptb_enas_child import PTBEnasChild
 from src.ptb.ptb_enas_controller import PTBEnasController
 
@@ -50,14 +52,13 @@ DEFINE_float("child_optim_moving_average", None,
 DEFINE_float("child_rnn_l2_reg", None, "")
 DEFINE_float("child_rnn_slowness_reg", None, "")
 DEFINE_float("child_lr_warmup_val", None, "")
+DEFINE_float("child_reset_train_states", None, "")
 DEFINE_integer("child_lr_dec_start", 4, "")
 DEFINE_integer("child_lr_dec_every", 1, "")
 DEFINE_integer("child_avg_pool_size", 1, "")
 DEFINE_integer("child_block_size", 1, "")
 DEFINE_integer("child_rhn_depth", 4, "")
-DEFINE_integer("child_mixture_of_softmax", None, "")
 DEFINE_integer("child_lr_warmup_steps", None, "")
-DEFINE_integer("child_mos_hidden", None, "")
 DEFINE_string("child_optim_algo", "sgd", "")
 
 DEFINE_boolean("child_sync_replicas", False, "")
@@ -75,7 +76,6 @@ DEFINE_float("controller_entropy_weight", None, "")
 DEFINE_float("controller_skip_target", None, "")
 DEFINE_float("controller_skip_rate", None, "")
 
-DEFINE_integer("controller_selection_threshold", 1, "")
 DEFINE_integer("controller_num_aggregate", 1, "")
 DEFINE_integer("controller_num_replicas", 1, "")
 DEFINE_integer("controller_train_steps", 50, "")
@@ -95,74 +95,18 @@ def get_ops(x_train, x_valid, x_test):
 
   ops = {}
 
-  if FLAGS.search_for == "base":
-    child_model = PTBBaseModel(
-      x_train,
-      x_valid,
-      x_test,
-      batch_size=FLAGS.batch_size,
-      bptt_steps=FLAGS.child_bptt_steps,
-      lstm_num_layers=FLAGS.child_num_layers,
-      lstm_hidden_size=FLAGS.child_lstm_hidden_size,
-      lstm_e_keep=FLAGS.child_lstm_e_keep,
-      lstm_x_keep=FLAGS.child_lstm_x_keep,
-      lstm_h_keep=FLAGS.child_lstm_h_keep,
-      lstm_o_keep=FLAGS.child_lstm_o_keep,
-      lstm_l_skip=FLAGS.child_lstm_l_skip,
-      vocab_size=10000,
-      lr_init=FLAGS.child_lr,
-      lr_dec_start=FLAGS.child_lr_dec_start,
-      lr_dec_every=FLAGS.child_lr_dec_every,
-      lr_dec_rate=FLAGS.child_lr_dec_rate,
-      grad_bound=FLAGS.child_grad_bound,
-      optim_algo=FLAGS.child_optim_algo,
-      sync_replicas=FLAGS.child_sync_replicas,
-      num_aggregate=FLAGS.child_num_aggregate,
-      num_replicas=FLAGS.child_num_replicas,
-      name="ptb_generic_model")
-
-    controller_ops = None
-  elif FLAGS.search_for == "rhn":
-    child_model = PTBRhnModel(
-      x_train,
-      x_valid,
-      x_test,
-      batch_size=FLAGS.batch_size,
-      bptt_steps=FLAGS.child_bptt_steps,
-      rhn_depth=FLAGS.child_rhn_depth,
-      lstm_num_layers=FLAGS.child_num_layers,
-      lstm_hidden_size=FLAGS.child_lstm_hidden_size,
-      lstm_e_keep=FLAGS.child_lstm_e_keep,
-      lstm_x_keep=FLAGS.child_lstm_x_keep,
-      lstm_h_keep=FLAGS.child_lstm_h_keep,
-      lstm_o_keep=FLAGS.child_lstm_o_keep,
-      lstm_l_skip=FLAGS.child_lstm_l_skip,
-      vocab_size=10000,
-      lr_init=FLAGS.child_lr,
-      lr_dec_start=FLAGS.child_lr_dec_start,
-      lr_dec_every=FLAGS.child_lr_dec_every,
-      lr_dec_rate=FLAGS.child_lr_dec_rate,
-      grad_bound=FLAGS.child_grad_bound,
-      optim_algo="adam",
-      sync_replicas=FLAGS.child_sync_replicas,
-      num_aggregate=FLAGS.child_num_aggregate,
-      num_replicas=FLAGS.child_num_replicas,
-      name="ptb_generic_model")
-
-    controller_ops = None
-  elif FLAGS.search_for == "enas":
+  if FLAGS.search_for == "enas":
     assert FLAGS.child_lstm_hidden_size % FLAGS.child_block_size == 0, (
       "--child_block_size has to divide child_lstm_hidden_size")
 
     if FLAGS.child_fixed_arc is not None:
-      assert not FLAGS.controller_training, "with --child_fixed_arc, cannot train controller"
+      assert not FLAGS.controller_training, (
+        "with --child_fixed_arc, cannot train controller")
 
     child_model = PTBEnasChild(
       x_train,
       x_valid,
       x_test,
-      mixture_of_softmax=FLAGS.child_mixture_of_softmax,
-      mos_hidden=FLAGS.child_mos_hidden,
       rnn_l2_reg=FLAGS.child_rnn_l2_reg,
       rnn_slowness_reg=FLAGS.child_rnn_slowness_reg,
       rhn_depth=FLAGS.child_rhn_depth,
@@ -197,9 +141,8 @@ def get_ops(x_train, x_valid, x_test):
 
     if FLAGS.child_fixed_arc is None:
       controller_model = PTBEnasController(
-        selection_threshold=FLAGS.controller_selection_threshold,
         rhn_depth=FLAGS.child_rhn_depth,
-        lstm_size=64,
+        lstm_size=100,
         lstm_num_layers=1,
         lstm_keep_prob=1.0,
         tanh_constant=FLAGS.controller_tanh_constant,
@@ -244,9 +187,10 @@ def get_ops(x_train, x_valid, x_test):
     "train_op": child_model.train_op,
     "train_ppl": child_model.train_ppl,
     "train_reset": child_model.train_reset,
+    "valid_reset": child_model.valid_reset,
+    "test_reset": child_model.test_reset,
     "lr": child_model.lr,
     "grad_norm": child_model.grad_norm,
-    # "grad_norms": child_model.grad_norms,
     "optimizer": child_model.optimizer,
   }
 
@@ -263,14 +207,14 @@ def get_ops(x_train, x_valid, x_test):
 
 
 def train(mode="train"):
-  assert mode in ["train", "eval"], "Unknown mode '{}'".format(mode)
+  assert mode in ["train", "eval"], "Unknown mode '{0}'".format(mode)
 
   with open(FLAGS.data_path) as finp:
     x_train, x_valid, x_test, _, _ = pickle.load(finp)
-    print "-" * 80
-    print "train_size: {}".format(np.size(x_train))
-    print "valid_size: {}".format(np.size(x_valid))
-    print " test_size: {}".format(np.size(x_test))
+    print("-" * 80)
+    print("train_size: {0}".format(np.size(x_train)))
+    print("valid_size: {0}".format(np.size(x_valid)))
+    print(" test_size: {0}".format(np.size(x_test)))
 
   g = tf.Graph()
   with g.as_default():
@@ -282,8 +226,6 @@ def train(mode="train"):
       saver = tf.train.Saver(max_to_keep=10)
     else:
       saver = child_ops["optimizer"].swapping_saver(max_to_keep=10)
-    # checkpoint_saver_hook = tf.train.CheckpointSaverHook(
-    #   FLAGS.output_dir, save_secs=1800, saver=saver)
     checkpoint_saver_hook = tf.train.CheckpointSaverHook(
       FLAGS.output_dir, save_steps=ops["num_train_batches"], saver=saver)
 
@@ -292,30 +234,29 @@ def train(mode="train"):
       sync_replicas_hook = child_ops["optimizer"].make_session_run_hook(True)
       hooks.append(sync_replicas_hook)
     if FLAGS.controller_training and FLAGS.controller_sync_replicas:
-      sync_replicas_hook = controller_ops["optimizer"].make_session_run_hook(True)
-      hooks.append(sync_replicas_hook)
+      hooks.append(controller_ops["optimizer"].make_session_run_hook(True))
 
-    print "-" * 80
-    print "Starting session"
+    print("-" * 80)
+    print("Starting session")
     with tf.train.SingularMonitoredSession(
       hooks=hooks, checkpoint_dir=FLAGS.output_dir) as sess:
         start_time = time.time()
 
         if mode == "eval":
-          sess.run(child_ops["train_reset"])
+          sess.run(child_ops["valid_reset"])
           ops["eval_func"](sess, "valid", verbose=True)
-          sess.run(child_ops["train_reset"])
+          sess.run(child_ops["test_reset"])
           ops["eval_func"](sess, "test", verbose=True)
           sys.exit(0)
 
         num_batches = 0
         total_tr_ppl = 0
+        best_valid_ppl = 68.50
         while True:
           run_ops = [
             child_ops["loss"],
             child_ops["lr"],
             child_ops["grad_norm"],
-            # child_ops["grad_norms"],
             child_ops["train_ppl"],
             child_ops["train_op"],
           ]
@@ -341,23 +282,31 @@ def train(mode="train"):
               np.exp(total_tr_ppl / num_batches))
             log_string += " mins={:<10.2f}".format(
                 float(curr_time - start_time) / 60)
-            print log_string
+            print(log_string)
 
-            # print "-" * 80
-            # for v, g in sorted(gns.iteritems()):
-            #   print "{:<60} {:<11.2f}".format(v, g)
-            # print "-" * 80
-
-          # if np.random.uniform(0, 1) < 0.003:
-          #   print "reset train states"
-          #   sess.run(child_ops["train_reset"])
+          if (FLAGS.child_reset_train_states is not None and
+              np.random.uniform(0, 1) < FLAGS.child_reset_train_states):
+            print("reset train states")
+            sess.run([
+              child_ops["train_reset"],
+              child_ops["valid_reset"],
+              child_ops["test_reset"],
+            ])
 
           if actual_step % ops["eval_every"] == 0:
-            sess.run(child_ops["train_reset"])
+            sess.run([
+              child_ops["train_reset"],
+              child_ops["valid_reset"],
+              child_ops["test_reset"],
+            ])
             if (FLAGS.controller_training and
                 epoch % FLAGS.controller_train_every == 0):
-              sess.run(child_ops["train_reset"])
-              print "Epoch {}: Training controller".format(epoch)
+              sess.run([
+                child_ops["train_reset"],
+                child_ops["valid_reset"],
+                child_ops["test_reset"],
+              ])
+              print("Epoch {}: Training controller".format(epoch))
               for ct_step in xrange(FLAGS.controller_train_steps *
                                     FLAGS.controller_num_aggregate):
                 run_ops = [
@@ -384,24 +333,37 @@ def train(mode="train"):
                   log_string += " bl={:<7.3f}".format(bl)
                   log_string += " mins={:<.2f}".format(
                       float(curr_time - start_time) / 60)
-                  print log_string
+                  print(log_string)
 
-              print "Here are 10 architectures"
+              print("Here are 10 architectures")
               for _ in xrange(10):
                 arc, rw = sess.run([
                   controller_ops["sample_arc"],
                   controller_ops["reward"],
                 ])
-                print "{} rw={:<.3f}".format(np.reshape(arc, [-1]), rw)
+                print("{} rw={:<.3f}".format(np.reshape(arc, [-1]), rw))
 
-            sess.run(child_ops["train_reset"])
-            print "Epoch {}: Eval".format(epoch)
-            ops["eval_func"](sess, "valid")
-            sess.run(child_ops["train_reset"])
+            sess.run([
+              child_ops["train_reset"],
+              child_ops["valid_reset"],
+              child_ops["test_reset"],
+            ])
+            print("Epoch {}: Eval".format(epoch))
+            valid_ppl = ops["eval_func"](sess, "valid")
+            if valid_ppl < best_valid_ppl:
+              best_valid_ppl = valid_ppl
+              sess.run(child_ops["test_reset"])
+              ops["eval_func"](sess, "test", verbose=True)
+
+            sess.run([
+              child_ops["train_reset"],
+              child_ops["valid_reset"],
+              child_ops["test_reset"],
+            ])
             total_tr_ppl = 0
             num_batches = 0
 
-            print "-" * 80
+            print("-" * 80)
 
           if epoch >= FLAGS.num_epochs:
             ops["eval_func"](sess, "test", verbose=True)
@@ -409,23 +371,22 @@ def train(mode="train"):
 
 
 def main(_):
-  print "-" * 80
+  print("-" * 80)
   if not os.path.isdir(FLAGS.output_dir):
-    print "Path {} does not exist. Creating.".format(FLAGS.output_dir)
+    print("Path {} does not exist. Creating.".format(FLAGS.output_dir))
     os.makedirs(FLAGS.output_dir)
   elif FLAGS.reset_output_dir:
-    print "Path {} exists. Remove and remake.".format(FLAGS.output_dir)
+    print("Path {} exists. Remove and remake.".format(FLAGS.output_dir))
     shutil.rmtree(FLAGS.output_dir)
     os.makedirs(FLAGS.output_dir)
 
-  print "-" * 80
+  print("-" * 80)
   log_file = os.path.join(FLAGS.output_dir, "stdout")
-  print "Logging to {}".format(log_file)
+  print("Logging to {}".format(log_file))
   sys.stdout = Logger(log_file)
 
   utils.print_user_flags()
   train(mode="train")
-  train(mode="eval")
 
 
 if __name__ == "__main__":
