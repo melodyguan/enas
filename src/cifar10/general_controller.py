@@ -153,7 +153,7 @@ class GeneralController(Controller):
           logit /= self.temperature
         if self.tanh_constant is not None:
           logit = self.tanh_constant * tf.tanh(logit)
-        if self.search_for == "both" or self.search_for == "branch":
+        if self.search_for == "macro" or self.search_for == "branch":
           branch_id = tf.multinomial(logit, 1)
           branch_id = tf.to_int32(branch_id)
           branch_id = tf.reshape(branch_id, [1])
