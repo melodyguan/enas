@@ -19,7 +19,7 @@ To run the ENAS search process on Penn Treebank, please use the script
 ./scripts/ptb_search.sh
 ```
 
-To run ENAS with a determined architecture, you have to specify the archiecture using a string. The following script provides an exampling of using the architecture we described in our paper.
+To run ENAS with a determined architecture, you have to specify the archiecture using a string. The following is an example script for using the architecture we described in our paper.
 ```
 ./scripts/ptb_final.sh
 ```
@@ -69,7 +69,7 @@ A micro architecture can be specified by two sequences of cells concatenated aft
 
 ## Citations
 
-If you happen to use our work, please consider citing our paper
+If you happen to use our work, please consider citing our paper.
 ```
 @article{enas,
   title   = {Efficient Neural Architecture Search via Parameter Sharing},
