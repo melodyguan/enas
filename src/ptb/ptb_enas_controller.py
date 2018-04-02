@@ -30,7 +30,6 @@ class PTBEnasController(object):
                entropy_weight=None,
                clip_mode=None,
                grad_bound=None,
-               use_critic=False,
                bl_dec=0.999,
                optim_algo="adam",
                sync_replicas=False,
@@ -55,7 +54,6 @@ class PTBEnasController(object):
     self.entropy_weight = entropy_weight
     self.clip_mode = clip_mode
     self.grad_bound = grad_bound
-    self.use_critic = use_critic
     self.bl_dec = bl_dec
     self.optim_algo = optim_algo
     self.sync_replicas = sync_replicas
@@ -212,7 +210,4 @@ class PTBEnasController(object):
       sync_replicas=self.sync_replicas,
       num_aggregate=self.num_aggregate,
       num_replicas=self.num_replicas)
-
-    if self.use_critic:
-      self.train_op = tf.group(self.train_op, critic_train_op)
 

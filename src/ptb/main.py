@@ -200,7 +200,6 @@ def get_ops(x_train, x_valid, x_test):
     "num_train_batches": child_model.num_train_batches,
     "eval_every": child_model.num_train_batches * FLAGS.eval_every_epochs,
     "eval_func": child_model.eval_once,
-    "cache_pointer": child_model.cache_pointer,
   }
 
   return ops
