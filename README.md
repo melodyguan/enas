@@ -10,7 +10,7 @@ Authors: Hieu Pham*, Melody Y. Guan*, Barret Zoph, Quoc V. Le, Jeff Dean
 
 ## Penn Treebank
 
-The Penn Treebank dataset is included at `data/ptb`. Depending on the system, you may want to run the script `data/ptb/process.py` to create the `pkl` version.
+The Penn Treebank dataset is included at `data/ptb`. Depending on the system, you may want to run the script `data/ptb/process.py` to create the `pkl` version. All hyper-parameters are specified in these scripts.
 
 To run the ENAS search process on Penn Treebank, please use the script
 ```
@@ -32,7 +32,7 @@ For a concrete example, the following sequence specifies the architecture we vis
 0 0 0 1 1 2 1 2 0 2 0 5 1 1 0 6 1 8 1 8 1 8 1
 ```
 
-All hyper-parameters are specified in these scripts.
+<img src="https://github.com/melodyguan/enas/blob/master/img/enas_rnn_cell.png" width="50%"/>
 
 ## CIFAR-10
 
