@@ -17,7 +17,6 @@ python src/cifar10/main.py \
   --eval_every_epochs=1 \
   --child_fixed_arc="$fixed_arc" \
   --child_use_aux_heads \
-  --child_cutout_size=16 \
   --child_num_layers=15 \
   --child_out_filters=36 \
   --child_num_branches=5 \
