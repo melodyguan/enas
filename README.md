@@ -40,7 +40,7 @@ For a concrete example, the following sequence specifies the architecture we vis
 
 To run the experiments on CIFAR-10, please first download the [dataset](https://www.cs.toronto.edu/~kriz/cifar.html). Again, all hyper-parameters are specified in the scripts that we descibe below.
 
-To run the ENAS experiments on the _macro space_ as described in our paper, please use the following scripts:
+To run the ENAS experiments on the _macro search space_ as described in our paper, please use the following scripts:
 ```
 ./scripts/cifar10_macro_search.sh
 ./scripts/cifar10_macro_final.sh
@@ -53,7 +53,7 @@ A macro architecture for a neural network with `N` layers consists of `N` parts,
 
 A concrete example can be found in our script `./scripts/cifar10_macro_final.sh`.
 
-To run the ENAS experiments on the _micro space_ as described in our paper, please use the following scripts:
+To run the ENAS experiments on the _micro search space_ as described in our paper, please use the following scripts:
 ```
 ./scripts/cifar10_micro_search.sh
 ./scripts/cifar10_micro_final.sh
