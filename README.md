@@ -44,6 +44,10 @@ To run the ENAS experiments on the _macro space_ as described in our paper, plea
 ./scripts/cifar10_macro_final.sh
 ```
 
+A macro architecture for a neural network with `N` layers consists of `N` parts, indexed by `1, 2, 3, ..., N`. Part `i` consists of
+
+* A number in `[0, 1, 2, 3, 4, 5]` that specifies the operation at layer `i`-th, corresponding to `conv_3x3`, `separable_conv_3x3`, `conv_5x5`, `separable_conv_5x5`, `average_pooling`, `max_pooling`.
+
 To run the ENAS experiments on the _micro space_ as described in our paper, please use the following scripts:
 ```
 ./scripts/cifar10_micro_search.sh
