@@ -38,7 +38,17 @@ For a concrete example, the following sequence specifies the architecture we vis
 
 To run the experiments on CIFAR-10, please first download the [dataset](https://www.cs.toronto.edu/~kriz/cifar.html).
 
-Experiments
+To run the ENAS experiments on the _macro space_ as described in our paper, please use the following scripts:
+```
+./scripts/cifar10_macro_search.sh
+./scripts/cifar10_macro_final.sh
+```
+
+To run the ENAS experiments on the _micro space_ as described in our paper, please use the following scripts:
+```
+./scripts/cifar10_micro_search.sh
+./scripts/cifar10_micro_final.sh
+```
 
 Again, all hyper-parameters are specified in these scripts.
 
