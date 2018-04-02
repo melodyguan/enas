@@ -15,7 +15,7 @@ python src/cifar10/main.py \
   --num_epochs=630 \
   --log_every=50 \
   --eval_every_epochs=1 \
-  --child_fixed_arc="$fixed_arc" \
+  --child_fixed_arc="${fixed_arc}" \
   --child_use_aux_heads \
   --child_num_layers=15 \
   --child_out_filters=36 \

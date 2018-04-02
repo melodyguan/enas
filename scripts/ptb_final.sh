@@ -12,7 +12,7 @@ python src/ptb/main.py \
   --batch_size=64 \
   --child_bptt_steps=35 \
   --num_epochs=2000 \
-  --child_fixed_arc="$fixed_arc" \
+  --child_fixed_arc="${fixed_arc}" \
   --child_rhn_depth=12 \
   --child_num_layers=1 \
   --child_lstm_hidden_size=748 \

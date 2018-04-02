@@ -481,7 +481,7 @@ class GeneralChild(Model):
     return out
 
   def _conv_branch(self, inputs, filter_size, is_training, count, out_filters,
-                   start_idx=None, separable=False):
+                   ch_mul=1, start_idx=None, separable=False):
     """
     Args:
       start_idx: where to start taking the output channels. if None, assuming
@@ -518,7 +518,6 @@ class GeneralChild(Model):
           x = batch_norm(x, is_training, data_format=self.data_format)
       else:
         if separable:
-          ch_mul = 1
           w_depth = create_weight("w_depth", [filter_size, filter_size, out_filters, ch_mul])
           w_point = create_weight("w_point", [out_filters, out_filters * ch_mul])
           w_point = w_point[start_idx:start_idx+count, :]

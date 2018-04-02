@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import sys
 import numpy as np
 import tensorflow as tf
@@ -31,7 +35,7 @@ def DEFINE_boolean(name, default_value, doc_string):
 
 
 def print_user_flags(line_limit=80):
-  print "-" * 80
+  print("-" * 80)
 
   global user_flags
   FLAGS = tf.app.flags.FLAGS
@@ -41,7 +45,7 @@ def print_user_flags(line_limit=80):
     log_string = flag_name
     log_string += "." * (line_limit - len(flag_name) - len(value))
     log_string += value
-    print log_string
+    print(log_string)
 
 
 class TextColors:
@@ -197,10 +201,10 @@ def get_train_ops(
   #       else:
   #         g_n = tf.reduce_sum(g ** 2)
   #       if "enas_cell" in v.name:
-  #         print "g_1: {}".format(v.name)
+  #         print("g_1: {}".format(v.name))
   #         g_1 += g_n
   #       else:
-  #         print "g_2: {}".format(v.name)
+  #         print("g_2: {}".format(v.name))
   #         g_2 += g_n
   #   learning_rate = tf.Print(learning_rate, [g_1, g_2, tf.sqrt(g_1 / g_2)],
   #                            message="g_1, g_2, g_1/g_2: ", summarize=5)
