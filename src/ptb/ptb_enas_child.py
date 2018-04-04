@@ -477,6 +477,8 @@ class PTBEnasChild(object):
             next_h.append(curr_h)
 
         out_h = next_h[-1]
+        if is_training:
+          out_h *= o_mask
         all_h = all_h.write(step, out_h)
       return step + 1, next_h, all_h
     
