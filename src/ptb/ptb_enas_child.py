@@ -167,7 +167,7 @@ class PTBEnasChild(object):
     total_loss = 0
     for batch_id in range(num_batches):
       curr_loss = sess.run(loss_op, feed_dict=feed_dict)
-      total_loss += np.minimum(curr_loss, 10.0 * bptt_steps * batch_size)
+      total_loss += curr_loss  # np.minimum(curr_loss, 10.0 * bptt_steps * batch_size)
       ppl_sofar = np.exp(total_loss / (bptt_steps * batch_size * (batch_id + 1)))
       if verbose and (batch_id + 1) % 1000 == 0:
         print("{:<5d} {:<6.2f}".format(batch_id + 1, ppl_sofar))

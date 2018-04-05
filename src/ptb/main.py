@@ -250,7 +250,7 @@ def train(mode="train"):
 
         num_batches = 0
         total_tr_ppl = 0
-        best_valid_ppl = 68.50
+        best_valid_ppl = 67.00
         while True:
           run_ops = [
             child_ops["loss"],
