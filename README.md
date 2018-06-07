@@ -71,15 +71,15 @@ A micro architecture can be specified by two sequences of cells concatenated aft
 
 If you happen to use our work, please consider citing our paper.
 ```
-@article{enas,
-  title   = {Efficient Neural Architecture Search via Parameter Sharing},
-  author  = {Pham, Hieu and
-             Guan, Melody Y. and
-             Zoph, Barret and
-             Le, Quoc V. and
-             Dean, Jeff
+@inproceedings{enas,
+  title     = {Efficient Neural Architecture Search via Parameter Sharing},
+  author    = {Pham, Hieu and
+               Guan, Melody Y. and
+               Zoph, Barret and
+               Le, Quoc V. and
+               Dean, Jeff
   },
-  journal   = {Arxiv, 1802.03268},
+  booktitle = {ICML},
   year      = {2018}
 }
 ```
