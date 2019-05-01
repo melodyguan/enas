@@ -12,8 +12,7 @@ _This is not an official Google product._
 
 ## Penn Treebank
 
-# IMPORTANT ERRATA
-The implementation of Language Model on this repository is wrong. The correct implementation is at the [new repository](https://github.com/google-research/google-research/tree/master/enas_lm).
+**IMPORTANT ERRATA**: The implementation of Language Model on this repository is wrong. The correct implementation is at the [new repository](https://github.com/google-research/google-research/tree/master/enas_lm).
 
 ## CIFAR-10
 
