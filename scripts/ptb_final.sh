@@ -4,7 +4,7 @@ export PYTHONPATH="$(pwd)"
 
 fixed_arc="0 0 0 1 1 2 1 2 0 2 0 5 1 1 0 6 1 8 1 8 1 8 1"
 
-python src/ptb/main.py \
+python3 src/ptb/main.py \
   --search_for="enas" \
   --reset_output_dir \
   --data_path="data/ptb/ptb.pkl" \
