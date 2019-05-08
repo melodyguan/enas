@@ -2,7 +2,9 @@
 
 export PYTHONPATH="$(pwd)"
 
-fixed_arc="0 0 0 1 1 2 1 2 0 2 0 5 1 1 0 6 1 8 1 8 1 8 1"
+default_arc="0 0 0 1 1 2 1 2 0 2 0 5 1 1 0 6 1 8 1 8 1 8 1"
+fixed_arc=${1:-$default_arc}
+echo "Arch: $fixed_arc"
 
 python src/ptb/main.py \
   --search_for="enas" \
