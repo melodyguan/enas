@@ -8,19 +8,19 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-from src.cifar10.models import Model
-from src.cifar10.image_ops import conv
-from src.cifar10.image_ops import fully_connected
-from src.cifar10.image_ops import batch_norm
-from src.cifar10.image_ops import batch_norm_with_mask
-from src.cifar10.image_ops import relu
-from src.cifar10.image_ops import max_pool
-from src.cifar10.image_ops import drop_path
-from src.cifar10.image_ops import global_avg_pool
+from enas.cifar10.models import Model
+from enas.cifar10.image_ops import conv
+from enas.cifar10.image_ops import fully_connected
+from enas.cifar10.image_ops import batch_norm
+from enas.cifar10.image_ops import batch_norm_with_mask
+from enas.cifar10.image_ops import relu
+from enas.cifar10.image_ops import max_pool
+from enas.cifar10.image_ops import drop_path
+from enas.cifar10.image_ops import global_avg_pool
 
-from src.utils import count_model_params
-from src.utils import get_train_ops
-from src.common_ops import create_weight
+from enas.utils import count_model_params
+from enas.utils import get_train_ops
+from enas.common_ops import create_weight
 
 class MicroChild(Model):
   def __init__(self,
@@ -111,7 +111,7 @@ class MicroChild(Model):
 
     if self.use_aux_heads:
       self.aux_head_indices = [self.pool_layers[-1] + 1]
-    
+
   def _factorized_reduction(self, x, out_filters, stride, is_training):
     """Reduces the shape of x without information loss due to striding."""
     assert out_filters % 2 == 0, (
@@ -134,7 +134,7 @@ class MicroChild(Model):
       w = create_weight("w", [1, 1, inp_c, out_filters // 2])
       path1 = tf.nn.conv2d(path1, w, [1, 1, 1, 1], "VALID",
                            data_format=self.data_format)
-  
+
     # Skip path 2
     # First pad with 0"s on the right and bottom, then shift the filter to
     # include those 0"s that were added.
@@ -146,7 +146,7 @@ class MicroChild(Model):
       pad_arr = [[0, 0], [0, 0], [0, 1], [0, 1]]
       path2 = tf.pad(x, pad_arr)[:, :, 1:, 1:]
       concat_axis = 1
-  
+
     path2 = tf.nn.avg_pool(
         path2, [1, 1, 1, 1], stride_spec, "VALID", data_format=self.data_format)
     with tf.variable_scope("path2_conv"):
@@ -154,7 +154,7 @@ class MicroChild(Model):
       w = create_weight("w", [1, 1, inp_c, out_filters // 2])
       path2 = tf.nn.conv2d(path2, w, [1, 1, 1, 1], "VALID",
                            data_format=self.data_format)
-  
+
     # Concat and apply BN
     final_path = tf.concat(values=[path1, path2], axis=concat_axis)
     final_path = batch_norm(final_path, is_training,

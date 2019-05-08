@@ -11,20 +11,20 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from src import utils
-from src.utils import Logger
-from src.utils import DEFINE_boolean
-from src.utils import DEFINE_float
-from src.utils import DEFINE_integer
-from src.utils import DEFINE_string
-from src.utils import print_user_flags
+from enas import utils
+from enas.utils import Logger
+from enas.utils import DEFINE_boolean
+from enas.utils import DEFINE_float
+from enas.utils import DEFINE_integer
+from enas.utils import DEFINE_string
+from enas.utils import print_user_flags
 
-from src.cifar10.data_utils import read_data
-from src.cifar10.general_controller import GeneralController
-from src.cifar10.general_child import GeneralChild
+from enas.cifar10.data_utils import read_data
+from enas.cifar10.general_controller import GeneralController
+from enas.cifar10.general_child import GeneralChild
 
-from src.cifar10.micro_controller import MicroController
-from src.cifar10.micro_child import MicroChild
+from enas.cifar10.micro_controller import MicroController
+from enas.cifar10.micro_child import MicroChild
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -271,7 +271,7 @@ def train():
             log_string += " mins={:<10.2f}".format(
                 float(curr_time - start_time) / 60)
             print(log_string)
-            
+
           if actual_step % ops["eval_every"] == 0:
             if (FLAGS.controller_training and
                 epoch % FLAGS.controller_train_every == 0):

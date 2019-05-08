@@ -9,8 +9,8 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from src.utils import get_train_ops
-from src.common_ops import stack_lstm
+from enas.utils import get_train_ops
+from enas.common_ops import stack_lstm
 
 from tensorflow.python.training import moving_averages
 
@@ -43,7 +43,7 @@ class PTBEnasController(object):
 
     self.rhn_depth = rhn_depth
     self.lstm_size = lstm_size
-    self.lstm_num_layers = lstm_num_layers 
+    self.lstm_num_layers = lstm_num_layers
     self.lstm_keep_prob = lstm_keep_prob
     self.tanh_constant = tanh_constant
     self.temperature = temperature

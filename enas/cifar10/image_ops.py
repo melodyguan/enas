@@ -2,8 +2,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.training import moving_averages
 
-from src.common_ops import create_weight
-from src.common_ops import create_bias
+from enas.common_ops import create_weight
+from enas.common_ops import create_bias
 
 
 def drop_path(x, keep_prob):

@@ -8,14 +8,14 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-from src.common_ops import lstm
+from enas.common_ops import lstm
 
-from src.utils import count_model_params
-from src.utils import get_train_ops
+from enas.utils import count_model_params
+from enas.utils import get_train_ops
 
-from src.ptb.data_utils import ptb_input_producer
-from src.ptb.ptb_ops import batch_norm
-from src.ptb.ptb_ops import layer_norm
+from enas.ptb.data_utils import ptb_input_producer
+from enas.ptb.ptb_ops import batch_norm
+from enas.ptb.ptb_ops import layer_norm
 
 class PTBEnasChild(object):
   def __init__(self,
@@ -99,7 +99,7 @@ class PTBEnasChild(object):
 
     self.name = name
     self.seed = seed
-    
+
     self.global_step = None
     self.valid_loss = None
     self.test_loss = None
@@ -145,7 +145,7 @@ class PTBEnasChild(object):
     assert self.global_step is not None, "TF op self.global_step not defined."
     global_step = sess.run(self.global_step)
     print("Eval at {}".format(global_step))
-   
+
     if eval_set == "valid":
       assert self.valid_loss is not None, "TF op self.valid_loss is not defined."
       num_batches = self.num_valid_batches
@@ -398,7 +398,7 @@ class PTBEnasChild(object):
     layers = tf.reduce_mean(layers, axis=0)
     layers.set_shape([batch_size, self.lstm_hidden_size])
     layers = batch_norm(layers, is_training)
-    
+
     return layers
 
   def _model(self, x, is_training, is_test, should_carry=True):
@@ -481,7 +481,7 @@ class PTBEnasChild(object):
           out_h *= o_mask
         all_h = all_h.write(step, out_h)
       return step + 1, next_h, all_h
-    
+
     loop_vars = [tf.constant(0, dtype=tf.int32), start_h, all_h]
     loop_outputs = tf.while_loop(condition, body, loop_vars, back_prop=True)
     next_h = loop_outputs[-2]
@@ -490,7 +490,7 @@ class PTBEnasChild(object):
     self.all_h_diff = tf.reduce_sum(all_h_diff)
     all_h = tf.transpose(all_h, [1, 0, 2])
     all_h = tf.reshape(all_h, [batch_size * num_steps, self.lstm_hidden_size])
-    
+
     carry_states = []
     reset_states = []
     for layer_id, (s_h, n_h) in enumerate(zip(start_h, next_h)):

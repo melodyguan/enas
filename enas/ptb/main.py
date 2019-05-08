@@ -11,16 +11,16 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from src import utils
-from src.utils import Logger
-from src.utils import DEFINE_boolean
-from src.utils import DEFINE_float
-from src.utils import DEFINE_integer
-from src.utils import DEFINE_string
-from src.utils import print_user_flags
+from enas import utils
+from enas.utils import Logger
+from enas.utils import DEFINE_boolean
+from enas.utils import DEFINE_float
+from enas.utils import DEFINE_integer
+from enas.utils import DEFINE_string
+from enas.utils import print_user_flags
 
-from src.ptb.ptb_enas_child import PTBEnasChild
-from src.ptb.ptb_enas_controller import PTBEnasController
+from enas.ptb.ptb_enas_child import PTBEnasChild
+from enas.ptb.ptb_enas_controller import PTBEnasController
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS

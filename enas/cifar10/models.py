@@ -4,15 +4,15 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-from src.cifar10.image_ops import conv
-from src.cifar10.image_ops import fully_connected
-from src.cifar10.image_ops import batch_norm
-from src.cifar10.image_ops import relu
-from src.cifar10.image_ops import max_pool
-from src.cifar10.image_ops import global_avg_pool
+from enas.cifar10.image_ops import conv
+from enas.cifar10.image_ops import fully_connected
+from enas.cifar10.image_ops import batch_norm
+from enas.cifar10.image_ops import relu
+from enas.cifar10.image_ops import max_pool
+from enas.cifar10.image_ops import global_avg_pool
 
-from src.utils import count_model_params
-from src.utils import get_train_ops
+from enas.utils import count_model_params
+from enas.utils import get_train_ops
 
 
 class Model(object):
@@ -62,7 +62,7 @@ class Model(object):
     self.data_format = data_format
     self.name = name
     self.seed = seed
-    
+
     self.global_step = None
     self.valid_acc = None
     self.test_acc = None
@@ -157,7 +157,7 @@ class Model(object):
     assert self.global_step is not None
     global_step = sess.run(self.global_step)
     print "Eval at {}".format(global_step)
-   
+
     if eval_set == "valid":
       assert self.x_valid is not None
       assert self.valid_acc is not None
